@@ -93,7 +93,8 @@ struct MenuBarView: View {
                 }
                 .id(listIdentity)
                 .listStyle(.plain)
-                .frame(minWidth: 420, minHeight: isPreviewPresented ? 220 : 320)
+                .frame(minWidth: 420)
+                .frame(height: isPreviewPresented ? 240 : 320)
 
                 if isPreviewPresented, let selectedItem {
                     ClipboardPreview(
@@ -217,8 +218,9 @@ private struct ClipboardPreview: View {
                     .textSelection(.enabled)
                     .font(.system(.caption, design: .monospaced))
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.bottom, 8)
             }
-            .frame(maxHeight: 150)
+            .frame(height: 220)
             .padding(10)
             .background(Color.secondary.opacity(0.08))
             .clipShape(RoundedRectangle(cornerRadius: 10))
