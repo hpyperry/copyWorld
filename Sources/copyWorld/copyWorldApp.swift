@@ -3,24 +3,24 @@ import SwiftUI
 
 @main
 struct copyWorldApp: App {
-    @StateObject private var appState = AppState.shared
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
         NSApplication.shared.setActivationPolicy(.accessory)
     }
 
     var body: some Scene {
-        MenuBarExtra("copyWorld", systemImage: "clipboard") {
-            MenuBarView(
-                historyStore: appState.historyStore,
-                monitor: appState.monitor
-            )
-        }
-        .menuBarExtraStyle(.window)
-
         Settings {
             SettingsView()
         }
+    }
+}
+
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    private var statusBarController: StatusBarController?
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        statusBarController = StatusBarController(appState: AppState.shared)
     }
 }
 

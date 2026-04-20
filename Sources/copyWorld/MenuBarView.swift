@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct MenuBarView: View {
@@ -76,23 +77,53 @@ struct MenuBarView: View {
                                 isPreviewPresented = true
                             },
                             onCopy: {
-                                selectedItemID = item.id
                                 monitor.copy(item)
                             },
                             onDelete: {
+                                let visibleItemsBeforeDelete = filteredItems
+                                let deletedIndex = visibleItemsBeforeDelete.firstIndex { $0.id == item.id }
+                                let wasPreviewPresented = isPreviewPresented
+                                let wasDeletingSelectedItem = (selectedItemID == item.id)
+
                                 historyStore.remove(itemID: item.id)
-                                if selectedItemID == item.id {
-                                    selectedItemID = filteredItems.first(where: { $0.id != item.id })?.id
-                                    if selectedItemID == nil {
-                                        isPreviewPresented = false
+
+                                guard wasDeletingSelectedItem else {
+                                    return
+                                }
+
+                                let remainingItems = visibleItemsBeforeDelete.filter { $0.id != item.id }
+                                if remainingItems.isEmpty {
+                                    selectedItemID = nil
+                                    isPreviewPresented = false
+                                    return
+                                }
+
+                                if wasPreviewPresented {
+                                    // If full preview is open, jump to the previous row.
+                                    if let deletedIndex {
+                                        let targetIndex = max(0, deletedIndex - 1)
+                                        selectedItemID = remainingItems[targetIndex].id
+                                    } else {
+                                        selectedItemID = remainingItems.first?.id
+                                    }
+                                } else {
+                                    // If full preview is closed, keep selection stable around current position.
+                                    if let deletedIndex {
+                                        let targetIndex = min(deletedIndex, remainingItems.count - 1)
+                                        selectedItemID = remainingItems[targetIndex].id
+                                    } else {
+                                        selectedItemID = remainingItems.first?.id
                                     }
                                 }
                             }
                         )
+                        .listRowBackground(Color.clear)
                     }
                 }
                 .id(listIdentity)
                 .listStyle(.plain)
+                .scrollContentBackground(.hidden)
+                .background(Color.clear)
                 .frame(minWidth: 420)
                 .frame(height: isPreviewPresented ? 240 : 320)
 
@@ -103,7 +134,6 @@ struct MenuBarView: View {
                             isPreviewPresented = false
                         }
                     )
-                        .id(selectedItem.id)
                 }
             }
 
@@ -117,6 +147,7 @@ struct MenuBarView: View {
         }
         .padding(14)
         .frame(width: 460)
+        .animation(.none, value: isPreviewPresented)
         .onChange(of: searchText) { _, newValue in
             if newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 listIdentity = UUID()
@@ -130,11 +161,7 @@ struct MenuBarView: View {
             syncSelection(preferTopItem: true)
         }
         .onAppear {
-            monitor.setCaptureSuspended(true)
             syncSelection(preferTopItem: true)
-        }
-        .onDisappear {
-            monitor.setCaptureSuspended(false)
         }
     }
 
@@ -213,17 +240,64 @@ private struct ClipboardPreview: View {
                     .controlSize(.small)
             }
 
-            ScrollView {
-                Text(item.text)
-                    .textSelection(.enabled)
-                    .font(.system(.caption, design: .monospaced))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.bottom, 8)
-            }
+            SelectablePreviewTextView(text: item.text)
             .frame(height: 220)
             .padding(10)
             .background(Color.secondary.opacity(0.08))
             .clipShape(RoundedRectangle(cornerRadius: 10))
         }
+    }
+}
+
+private struct SelectablePreviewTextView: NSViewRepresentable {
+    let text: String
+
+    final class Coordinator {
+        var lastRenderedText: String?
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let textView = NSTextView()
+        textView.isEditable = false
+        textView.isSelectable = true
+        textView.isRichText = false
+        textView.allowsUndo = false
+        textView.drawsBackground = false
+        textView.textContainerInset = NSSize(width: 0, height: 4)
+        textView.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        textView.string = text
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.textContainer?.widthTracksTextView = true
+        textView.textContainer?.containerSize = NSSize(
+            width: CGFloat.greatestFiniteMagnitude,
+            height: CGFloat.greatestFiniteMagnitude
+        )
+        context.coordinator.lastRenderedText = text
+
+        let scrollView = NSScrollView()
+        scrollView.borderType = .noBorder
+        scrollView.drawsBackground = false
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true
+        scrollView.documentView = textView
+        return scrollView
+    }
+
+    func updateNSView(_ nsView: NSScrollView, context: Context) {
+        guard let textView = nsView.documentView as? NSTextView else { return }
+        guard context.coordinator.lastRenderedText != text else {
+            return
+        }
+
+        textView.string = text
+        context.coordinator.lastRenderedText = text
+        textView.setSelectedRange(NSRange(location: 0, length: 0))
+        textView.scrollToBeginningOfDocument(nil)
     }
 }
