@@ -212,11 +212,12 @@ private struct ClipboardRow: View {
             .clipShape(RoundedRectangle(cornerRadius: 10))
 
             HStack {
-                Button("Copy Back", action: onCopy)
+                Button("Copy", action: onCopy)
                     .buttonStyle(.borderedProminent)
 
                 Button("Delete", role: .destructive, action: onDelete)
-                    .buttonStyle(.bordered)
+                    .buttonStyle(.borderedProminent)
+                    .tint(.red)
             }
         }
         .padding(.vertical, 4)
