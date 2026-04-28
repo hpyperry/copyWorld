@@ -55,3 +55,33 @@ A **menu-bar-only** macOS clipboard history app (no Dock icon, `LSUIElement = tr
 - **Xcode project is generated**: `scripts/generate_xcodeproj.rb` scans `Sources/` and `Tests/` directories and builds the `.xcodeproj` from scratch using the `xcodeproj` Ruby gem.
 - **No sandbox, no hardened runtime**: Sandbox and code signing enforcement are both disabled in the Xcode build settings — this app relies on `NSPasteboard` polling which requires accessibility permissions, not sandbox entitlements.
 - **Haptic + visual feedback on actions**: Copy and delete both trigger `NSHapticFeedbackManager.defaultPerformer.perform(.alignment)`. Copy additionally shows a brief button state change (`doc.on.doc` + "Copy" → `checkmark` + "Copied", green tint, disabled for 1.5s) tracked via a `@State copiedItemID` in `MenuBarView` with a `Task.sleep` reset. Follow this pattern when adding new destructive or clipboard-mutating actions.
+
+## Versioning & Release
+
+Version is defined in two places in `copyWorld.xcodeproj/project.pbxproj`:
+- `MARKETING_VERSION` — semver display version (e.g. `0.1.0`)
+- `CURRENT_PROJECT_VERSION` — integer build number (e.g. `1`)
+
+Release workflow:
+
+```bash
+# 1. Bump version in project.pbxproj (MARKETING_VERSION and/or CURRENT_PROJECT_VERSION)
+# 2. Build DMG
+./scripts/build_dmg.sh
+
+# 3. Tag and push
+git tag v<MARKETING_VERSION>
+git push origin v<MARKETING_VERSION>
+
+# 4. Create GitHub release with DMG asset
+gh release create v<MARKETING_VERSION> \
+  --title "v<MARKETING_VERSION> — <简短描述>" \
+  --notes-file - \
+  dist/copyWorld.dmg <<'EOF'
+## copyWorld v<MARKETING_VERSION>
+
+<发行说明>
+EOF
+```
+
+The app is unsigned — users need to right-click → Open on first launch (or `xattr -cr copyWorld.app`). No notarization, no Sparkle update framework. Each release is a standalone DMG download.
