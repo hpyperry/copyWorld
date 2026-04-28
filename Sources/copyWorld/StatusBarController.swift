@@ -29,6 +29,7 @@ final class StatusBarController: NSObject {
         popover.contentViewController = NSHostingController(
             rootView: MenuBarView(
                 historyStore: appState.historyStore,
+                launchAtLoginManager: appState.launchAtLoginManager,
                 monitor: appState.monitor
             )
         )

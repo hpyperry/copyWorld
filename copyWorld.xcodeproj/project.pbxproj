@@ -15,6 +15,7 @@
 		5A4F122091A59E93B43708F4 /* ClipboardMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83A4E64E7265B9B067654F92 /* ClipboardMonitor.swift */; };
 		5F6672256E8E6DD680354A78 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5D736AFC75DD49E295F32E6F /* Cocoa.framework */; };
 		61243147CFEE436CE94CA8B4 /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB2CAE0042E0CC880B479748 /* MenuBarView.swift */; };
+		723D8413B7B44EAB2AE44C24 /* LaunchAtLoginManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E241CE84529DFB3D17A4FA4A /* LaunchAtLoginManager.swift */; };
 		89D19F64DC09D1DFA77043FD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 39817752E5989F6B72DE36D7 /* Assets.xcassets */; };
 		A9933B962F54EEA9BADE4C20 /* copyWorldApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B9687417C073C6E7204CA68 /* copyWorldApp.swift */; };
 		B1CE312441410FA762C2B9AB /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA7175C0ED81D4E88240C162 /* AppState.swift */; };
@@ -44,6 +45,7 @@
 		C3EEAE06F9649F4A6FE168FA /* ClipboardItem.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ClipboardItem.swift; path = Sources/copyWorld/ClipboardItem.swift; sourceTree = "<group>"; };
 		DA7175C0ED81D4E88240C162 /* AppState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AppState.swift; path = Sources/copyWorld/AppState.swift; sourceTree = "<group>"; };
 		DB2CAE0042E0CC880B479748 /* MenuBarView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = MenuBarView.swift; path = Sources/copyWorld/MenuBarView.swift; sourceTree = "<group>"; };
+		E241CE84529DFB3D17A4FA4A /* LaunchAtLoginManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = LaunchAtLoginManager.swift; path = Sources/copyWorld/LaunchAtLoginManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -117,6 +119,7 @@
 				766D96C936F65FE55593340C /* ClipboardHistoryStore.swift */,
 				C3EEAE06F9649F4A6FE168FA /* ClipboardItem.swift */,
 				83A4E64E7265B9B067654F92 /* ClipboardMonitor.swift */,
+				E241CE84529DFB3D17A4FA4A /* LaunchAtLoginManager.swift */,
 				DB2CAE0042E0CC880B479748 /* MenuBarView.swift */,
 				5575888FC20BE9CF48A82CD0 /* StatusBarController.swift */,
 				0B9687417C073C6E7204CA68 /* copyWorldApp.swift */,
@@ -252,6 +255,7 @@
 				55CE789045FC9519BAD7FA19 /* ClipboardHistoryStore.swift in Sources */,
 				4AA81DCAC7B4734C04595579 /* ClipboardItem.swift in Sources */,
 				5A4F122091A59E93B43708F4 /* ClipboardMonitor.swift in Sources */,
+				723D8413B7B44EAB2AE44C24 /* LaunchAtLoginManager.swift in Sources */,
 				61243147CFEE436CE94CA8B4 /* MenuBarView.swift in Sources */,
 				59AF8C4AE2B32CBB2735EFC5 /* StatusBarController.swift in Sources */,
 				A9933B962F54EEA9BADE4C20 /* copyWorldApp.swift in Sources */,

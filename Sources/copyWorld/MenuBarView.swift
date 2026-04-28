@@ -3,6 +3,7 @@ import SwiftUI
 
 struct MenuBarView: View {
     @ObservedObject var historyStore: ClipboardHistoryStore
+    @ObservedObject var launchAtLoginManager: LaunchAtLoginManager
     let monitor: ClipboardMonitor
 
     @State private var searchText = ""
@@ -39,6 +40,12 @@ struct MenuBarView: View {
                 Spacer()
 
                 Menu {
+                    Button(launchAtLoginManager.isEnabled ? "Disable Launch at Login" : "Enable Launch at Login") {
+                        launchAtLoginManager.setEnabled(!launchAtLoginManager.isEnabled)
+                    }
+
+                    Divider()
+
                     Button("Clear All", role: .destructive) {
                         historyStore.clear()
                     }
@@ -143,6 +150,20 @@ struct MenuBarView: View {
                 Text("\(historyStore.items.count) saved")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                Spacer()
+
+                if launchAtLoginManager.isEnabled {
+                    Label("Launch at login on", systemImage: "checkmark.circle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            if let statusMessage = launchAtLoginManager.statusMessage {
+                Text(statusMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(14)
@@ -161,6 +182,7 @@ struct MenuBarView: View {
             syncSelection(preferTopItem: true)
         }
         .onAppear {
+            launchAtLoginManager.refresh()
             syncSelection(preferTopItem: true)
         }
     }
