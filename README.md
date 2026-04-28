@@ -21,7 +21,6 @@ Ship a local-only menu bar clipboard tool for macOS that behaves like a lightwei
 
 - Images, files, and rich text
 - Global shortcuts
-- Launch at login
 - Cloud sync
 - App signing and notarization
 
@@ -43,9 +42,28 @@ Ship a local-only menu bar clipboard tool for macOS that behaves like a lightwei
 - `Swift Package Manager` for package metadata and tests
 - `swiftc` fallback scripts for local bundle staging
 
-## Local Run
+## Build And Package
 
 The repository now includes a standard macOS app project at [copyWorld.xcodeproj](copyWorld/copyWorld.xcodeproj).
+
+Build a release `.app` into `dist/`:
+
+```bash
+./scripts/build_app.sh
+```
+
+Build a distributable `.dmg` into `dist/`:
+
+```bash
+./scripts/build_dmg.sh
+```
+
+The generated files are:
+
+- `dist/copyWorld.app`
+- `dist/copyWorld.dmg`
+
+## Local Run
 
 Preferred development flow:
 
@@ -61,20 +79,8 @@ You can also build from the command line once Xcode first-launch setup is comple
 xcodebuild -project copyWorld.xcodeproj -scheme copyWorld -configuration Debug build
 ```
 
-## Fallback Scripts
-
-If you want to keep using the script-based bundle build during local debugging, the original scripts are still available.
-
-Build the app:
-
-```bash
-./scripts/build_app.sh
-```
-
-Run the app:
+Run the packaged app directly:
 
 ```bash
 ./scripts/run_app.sh
 ```
-
-The built app bundle is created at `.build/app/copyWorld.app`.

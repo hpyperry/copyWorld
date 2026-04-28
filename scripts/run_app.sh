@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-APP_PATH="$ROOT_DIR/.build/app/copyWorld.app"
+APP_PATH="$ROOT_DIR/dist/copyWorld.app"
 
 if [[ ! -d "$APP_PATH" ]]; then
   "$ROOT_DIR/scripts/build_app.sh"

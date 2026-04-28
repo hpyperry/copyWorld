@@ -4,24 +4,19 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 APP_NAME="copyWorld"
-BUILD_DIR="$ROOT_DIR/.build/app"
+BUILD_DIR="$ROOT_DIR/dist"
 APP_DIR="$BUILD_DIR/$APP_NAME.app"
-MACOS_DIR="$APP_DIR/Contents/MacOS"
-RESOURCES_DIR="$APP_DIR/Contents/Resources"
+DERIVED_DATA_DIR="$ROOT_DIR/.build/DerivedData"
 
-mkdir -p "$MACOS_DIR" "$RESOURCES_DIR"
+rm -rf "$APP_DIR"
+mkdir -p "$BUILD_DIR" "$DERIVED_DATA_DIR"
 
-swiftc \
-  -module-name "$APP_NAME" \
-  -o "$MACOS_DIR/$APP_NAME" \
-  "$ROOT_DIR"/Sources/copyWorld/*.swift \
-  -framework SwiftUI \
-  -framework AppKit
-
-cp "$ROOT_DIR/scripts/Info.plist" "$APP_DIR/Contents/Info.plist"
-
-if [[ -f "$ROOT_DIR/scripts/AppIcon.icns" ]]; then
-  cp "$ROOT_DIR/scripts/AppIcon.icns" "$RESOURCES_DIR/AppIcon.icns"
-fi
+xcodebuild \
+  -project "$ROOT_DIR/copyWorld.xcodeproj" \
+  -scheme "$APP_NAME" \
+  -configuration Release \
+  -derivedDataPath "$DERIVED_DATA_DIR" \
+  CONFIGURATION_BUILD_DIR="$BUILD_DIR" \
+  build > /dev/null
 
 echo "Built app bundle at: $APP_DIR"
