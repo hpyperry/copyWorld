@@ -405,7 +405,7 @@
 				INFOPLIST_FILE = copyWorld/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.copyworld.clipboard;
 				SDKROOT = macosx;
 				SWIFT_VERSION = 5.0;
@@ -426,7 +426,7 @@
 				INFOPLIST_FILE = copyWorld/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.1.0;
+				MARKETING_VERSION = 0.0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.copyworld.clipboard;
 				SDKROOT = macosx;
 				SWIFT_VERSION = 5.0;
