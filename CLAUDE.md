@@ -25,7 +25,7 @@ xcodebuild -project copyWorld.xcodeproj -scheme copyWorld -configuration Debug b
 ruby scripts/generate_xcodeproj.rb
 ```
 
-There are no formal tests yet — `Tests/copyWorldTests/` contains a skeleton. The integration test is a standalone script: `swift scripts/test_clipboard_monitor.swift`.
+46-unit test cases covering data model, storage, history store, and clipboard monitor (Swift Testing framework, `@Suite(.serialized)` where needed). Run via `xcodebuild -project copyWorld.xcodeproj -scheme copyWorld -configuration Debug test`.
 
 ## Architecture
 
@@ -53,7 +53,8 @@ A **menu-bar-only** macOS clipboard history app (no Dock icon, `LSUIElement = tr
 - **Capture suspension model**: When the popover opens, external clipboard polling is paused. Any clipboard change that occurred while suspended is consumed (ignored) on resume. This plus SHA256 hash-based dedup prevents the app's own clipboard writes from appearing as new history entries.
 - **All main-actor**: No background queues or async networking. Everything runs synchronously on `@MainActor`, which is safe because clipboard access and file I/O are lightweight on the main thread.
 - **File-system persistence**: Replaced UserDefaults with `~/Library/Application Support/copyWorld/items/`. Metadata and content stored separately — metadata loads eagerly (lightweight), content loads on demand for preview. Old UserDefaults data is auto-migrated on first launch and never deleted (safe downgrade).
-- **Xcode project is generated**: `scripts/generate_xcodeproj.rb` scans `Sources/` and `Tests/` directories and builds the `.xcodeproj` from scratch using the `xcodeproj` Ruby gem.
+- **Xcode project is generated**: `scripts/generate_xcodeproj.rb` scans `Sources/` and `Tests/` directories and builds the `.xcodeproj` from scratch using the `xcodeproj` Ruby gem. It also includes `copyWorld/Resources/` assets (Assets.xcassets, Info.plist, Localizable.xcstrings).
+- **Localization**: Uses String Catalog (`Localizable.xcstrings`) for English (source) and Simplified Chinese (zh-Hans). SwiftUI `Text`/`Button`/`Label`/`Toggle`/`TextField`/`ContentUnavailableView` string literals auto-localize via `LocalizedStringKey`. For AppKit API calls (`NSMenuItem`, `NSImage accessibilityDescription`) and computed String properties, use `String(localized:)`. When adding new user-facing strings, add entries to `Localizable.xcstrings`.
 - **No sandbox, no hardened runtime**: Sandbox and code signing enforcement are both disabled in the Xcode build settings — this app relies on `NSPasteboard` polling which requires accessibility permissions, not sandbox entitlements.
 - **Haptic + visual feedback on actions**: Copy and delete both trigger `NSHapticFeedbackManager.defaultPerformer.perform(.alignment)`. Copy additionally shows a brief button state change (`doc.on.doc` + "Copy" → `checkmark` + "Copied", green tint, disabled for 1.5s) tracked via a `@State copiedItemID` in `MenuBarView` with a `Task.sleep` reset. Follow this pattern when adding new destructive or clipboard-mutating actions.
 

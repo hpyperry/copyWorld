@@ -1,6 +1,6 @@
 # copyWorld
 
-A menu-bar-only macOS clipboard history app supporting plain text, rich text (RTF), and images.
+A menu-bar-only macOS clipboard history app supporting plain text, rich text (RTF), and images, with English and Simplified Chinese localization.
 
 ## Features
 
@@ -9,6 +9,7 @@ A menu-bar-only macOS clipboard history app supporting plain text, rich text (RT
 - Search clipboard history (text/RTF only; images excluded from search)
 - Copy any entry back to the system clipboard with original formatting
 - Type-aware previews: monospaced text, rich text rendering, image with checkerboard background
+- English and Simplified Chinese localization
 - Delete single items or clear all history
 
 ## Tech Stack
