@@ -30,7 +30,8 @@ final class StatusBarController: NSObject {
             rootView: MenuBarView(
                 historyStore: appState.historyStore,
                 launchAtLoginManager: appState.launchAtLoginManager,
-                monitor: appState.monitor
+                monitor: appState.monitor,
+                storage: appState.storage
             )
         )
     }

@@ -5,6 +5,7 @@ struct MenuBarView: View {
     @ObservedObject var historyStore: ClipboardHistoryStore
     @ObservedObject var launchAtLoginManager: LaunchAtLoginManager
     let monitor: ClipboardMonitor
+    let storage: ClipboardStorage
 
     @State private var searchText = ""
     @State private var selectedItemID: ClipboardItem.ID?
@@ -19,7 +20,12 @@ struct MenuBarView: View {
         }
 
         return historyStore.items.filter { item in
-            item.text.localizedCaseInsensitiveContains(query)
+            switch item.type {
+            case .text, .rtf:
+                return item.text.localizedCaseInsensitiveContains(query)
+            case .image:
+                return false
+            }
         }
     }
 
@@ -28,7 +34,6 @@ struct MenuBarView: View {
            let item = filteredItems.first(where: { $0.id == selectedItemID }) {
             return item
         }
-
         return filteredItems.first
     }
 
@@ -64,14 +69,14 @@ struct MenuBarView: View {
                 }
             }
 
-            TextField("Search copied text", text: $searchText)
+            TextField("Search clipboard history", text: $searchText)
                 .textFieldStyle(.roundedBorder)
 
             if filteredItems.isEmpty {
                 ContentUnavailableView(
                     "No Items Yet",
                     systemImage: "clipboard",
-                    description: Text("Copy some text anywhere on your Mac and it will appear here.")
+                    description: Text("Copy text, formatted text, or images anywhere on your Mac and they will appear here.")
                 )
                 .frame(maxWidth: .infinity, minHeight: 220)
             } else {
@@ -147,6 +152,7 @@ struct MenuBarView: View {
                 if isPreviewPresented, let selectedItem {
                     ClipboardPreview(
                         item: selectedItem,
+                        storage: storage,
                         onClose: {
                             isPreviewPresented = false
                         }
@@ -215,6 +221,8 @@ struct MenuBarView: View {
     }
 }
 
+// MARK: - ClipboardRow
+
 private struct ClipboardRow: View {
     let item: ClipboardItem
     let isSelected: Bool
@@ -223,20 +231,28 @@ private struct ClipboardRow: View {
     let onCopy: () -> Void
     let onDelete: () -> Void
 
+    private var copyLabel: String {
+        item.type == .image ? "Copy Image" : "Copy"
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button(action: onSelect) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(item.title)
-                        .font(.body.weight(.medium))
-                        .foregroundStyle(.primary)
-                        .lineLimit(2)
+                HStack(spacing: 8) {
+                    typeIcon
 
-                    Text(item.createdAt.formatted(date: .abbreviated, time: .shortened))
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.title)
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(.primary)
+                            .lineLimit(2)
+
+                        Text(item.createdAt.formatted(date: .abbreviated, time: .shortened))
+                            .font(.caption2)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -249,7 +265,7 @@ private struct ClipboardRow: View {
                     if isCopied {
                         Label("Copied", systemImage: "checkmark")
                     } else {
-                        Label("Copy", systemImage: "doc.on.doc")
+                        Label(copyLabel, systemImage: "doc.on.doc")
                     }
                 }
                 .buttonStyle(.borderedProminent)
@@ -264,11 +280,41 @@ private struct ClipboardRow: View {
         }
         .padding(.vertical, 4)
     }
+
+    @ViewBuilder
+    private var typeIcon: some View {
+        switch item.type {
+        case .text:
+            EmptyView()
+        case .rtf:
+            Image(systemName: "doc.richtext")
+                .foregroundStyle(.secondary)
+                .font(.title3)
+        case .image:
+            if let thumbnail = item.thumbnail {
+                Image(nsImage: thumbnail)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 36, height: 36)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+            } else {
+                Image(systemName: "photo")
+                    .foregroundStyle(.secondary)
+                    .font(.title3)
+            }
+        }
+    }
 }
+
+// MARK: - ClipboardPreview
 
 private struct ClipboardPreview: View {
     let item: ClipboardItem
+    let storage: ClipboardStorage
     let onClose: () -> Void
+
+    @State private var rtfData: Data?
+    @State private var image: NSImage?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -283,17 +329,97 @@ private struct ClipboardPreview: View {
                     .controlSize(.small)
             }
 
-            SelectablePreviewTextView(text: item.text)
-            .frame(height: 220)
-            .padding(10)
-            .background(Color.secondary.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            previewContent
+        }
+        .task {
+            switch item.type {
+            case .rtf where item.rtfData == nil:
+                rtfData = try? storage.loadRTFData(for: item.id)
+            case .image where item.image == nil:
+                image = storage.loadImage(for: item.id, format: item.imageFormat ?? "png")
+            default:
+                break
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var previewContent: some View {
+        switch item.type {
+        case .text:
+            TextPreview(text: item.text)
+
+        case .rtf:
+            let data = item.rtfData ?? rtfData
+            if let data {
+                RTFPreview(rtfData: data)
+            } else {
+                TextPreview(text: item.text)
+            }
+
+        case .image:
+            let img = item.image ?? image
+            if let img {
+                ImagePreview(image: img)
+            } else {
+                ContentUnavailableView(
+                    "Image Unavailable",
+                    systemImage: "photo.badge.exclamationmark",
+                    description: Text("Could not load image data.")
+                )
+                .frame(height: 220)
+            }
         }
     }
 }
 
+// MARK: - TextPreview
+
+private struct TextPreview: View {
+    let text: String
+
+    var body: some View {
+        SelectablePreviewTextView(text: text, isRichText: false)
+            .frame(height: 220)
+            .padding(10)
+            .background(Color.secondary.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+}
+
+// MARK: - RTFPreview
+
+private struct RTFPreview: View {
+    let rtfData: Data
+
+    var body: some View {
+        RTFPreviewTextView(rtfData: rtfData)
+            .frame(height: 220)
+            .padding(10)
+            .background(Color.secondary.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+}
+
+// MARK: - ImagePreview
+
+private struct ImagePreview: View {
+    let image: NSImage
+
+    var body: some View {
+        ImagePreviewView(image: image)
+            .frame(height: 220)
+            .padding(10)
+            .background(CheckerboardBackground())
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+}
+
+// MARK: - SelectablePreviewTextView (NSViewRepresentable)
+
 private struct SelectablePreviewTextView: NSViewRepresentable {
     let text: String
+    let isRichText: Bool
 
     final class Coordinator {
         var lastRenderedText: String?
@@ -307,7 +433,7 @@ private struct SelectablePreviewTextView: NSViewRepresentable {
         let textView = NSTextView()
         textView.isEditable = false
         textView.isSelectable = true
-        textView.isRichText = false
+        textView.isRichText = isRichText
         textView.allowsUndo = false
         textView.drawsBackground = false
         textView.textContainerInset = NSSize(width: 0, height: 4)
@@ -334,13 +460,140 @@ private struct SelectablePreviewTextView: NSViewRepresentable {
 
     func updateNSView(_ nsView: NSScrollView, context: Context) {
         guard let textView = nsView.documentView as? NSTextView else { return }
-        guard context.coordinator.lastRenderedText != text else {
-            return
-        }
+        guard context.coordinator.lastRenderedText != text else { return }
 
         textView.string = text
         context.coordinator.lastRenderedText = text
         textView.setSelectedRange(NSRange(location: 0, length: 0))
         textView.scrollToBeginningOfDocument(nil)
+    }
+}
+
+// MARK: - RTFPreviewTextView (NSViewRepresentable)
+
+private struct RTFPreviewTextView: NSViewRepresentable {
+    let rtfData: Data
+
+    final class Coordinator {
+        var lastRenderedData: Data?
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let textView = NSTextView()
+        textView.isEditable = false
+        textView.isSelectable = true
+        textView.isRichText = true
+        textView.allowsUndo = false
+        textView.drawsBackground = false
+        textView.textContainerInset = NSSize(width: 0, height: 4)
+        textView.isVerticallyResizable = true
+        textView.isHorizontallyResizable = false
+        textView.textContainer?.widthTracksTextView = true
+        textView.textContainer?.containerSize = NSSize(
+            width: CGFloat.greatestFiniteMagnitude,
+            height: CGFloat.greatestFiniteMagnitude
+        )
+
+        let attributed = NSAttributedString(
+            rtf: rtfData,
+            documentAttributes: nil
+        ) ?? NSAttributedString(string: "(Unable to render RTF)")
+
+        textView.textStorage?.setAttributedString(attributed)
+        context.coordinator.lastRenderedData = rtfData
+
+        let scrollView = NSScrollView()
+        scrollView.borderType = .noBorder
+        scrollView.drawsBackground = false
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.autohidesScrollers = true
+        scrollView.documentView = textView
+        return scrollView
+    }
+
+    func updateNSView(_ nsView: NSScrollView, context: Context) {
+        guard let textView = nsView.documentView as? NSTextView else { return }
+        guard context.coordinator.lastRenderedData != rtfData else { return }
+
+        let attributed = NSAttributedString(
+            rtf: rtfData,
+            documentAttributes: nil
+        ) ?? NSAttributedString(string: "(Unable to render RTF)")
+
+        textView.textStorage?.setAttributedString(attributed)
+        context.coordinator.lastRenderedData = rtfData
+        textView.setSelectedRange(NSRange(location: 0, length: 0))
+        textView.scrollToBeginningOfDocument(nil)
+    }
+}
+
+// MARK: - ImagePreviewView (NSViewRepresentable)
+
+private struct ImagePreviewView: NSViewRepresentable {
+    let image: NSImage
+
+    func makeNSView(context: Context) -> NSScrollView {
+        let imageView = NSImageView()
+        imageView.image = image
+        imageView.imageScaling = .scaleProportionallyDown
+        imageView.imageAlignment = .alignCenter
+
+        let scrollView = NSScrollView()
+        scrollView.borderType = .noBorder
+        scrollView.drawsBackground = false
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = true
+        scrollView.autohidesScrollers = true
+        scrollView.documentView = imageView
+        scrollView.backgroundColor = .clear
+        return scrollView
+    }
+
+    func updateNSView(_ nsView: NSScrollView, context: Context) {
+        guard let imageView = nsView.documentView as? NSImageView else { return }
+        imageView.image = image
+        imageView.frame.size = image.size
+    }
+}
+
+// MARK: - CheckerboardBackground
+
+private struct CheckerboardBackground: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        CheckerboardView()
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
+}
+
+private final class CheckerboardView: NSView {
+    private let squareSize: CGFloat = 10
+
+    override func draw(_ dirtyRect: NSRect) {
+        let light = NSColor(white: 0.92, alpha: 1)
+        let dark = NSColor(white: 0.78, alpha: 1)
+
+        let cols = Int(ceil(bounds.width / squareSize))
+        let rows = Int(ceil(bounds.height / squareSize))
+
+        for row in 0..<rows {
+            for col in 0..<cols {
+                let isDark = (row + col) % 2 == 0
+                let color = isDark ? dark : light
+                let rect = NSRect(
+                    x: CGFloat(col) * squareSize,
+                    y: CGFloat(row) * squareSize,
+                    width: squareSize,
+                    height: squareSize
+                )
+                color.setFill()
+                rect.fill()
+            }
+        }
     }
 }

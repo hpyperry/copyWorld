@@ -4,14 +4,19 @@ import Foundation
 final class AppState: ObservableObject {
     static let shared = AppState()
 
+    let storage: ClipboardStorage
     let historyStore: ClipboardHistoryStore
     let monitor: ClipboardMonitor
     let launchAtLoginManager: LaunchAtLoginManager
 
     private init() {
-        let historyStore = ClipboardHistoryStore(maximumItems: 30)
+        let storage = ClipboardStorage(maxItems: 30)
+        self.storage = storage
+
+        let historyStore = ClipboardHistoryStore(storage: storage, maximumItems: 30)
         self.historyStore = historyStore
-        self.monitor = ClipboardMonitor(historyStore: historyStore)
+
+        self.monitor = ClipboardMonitor(historyStore: historyStore, storage: storage)
         self.launchAtLoginManager = LaunchAtLoginManager()
         self.monitor.start()
     }
